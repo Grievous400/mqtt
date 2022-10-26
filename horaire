@@ -1,0 +1,75 @@
+import random
+import datetime
+import time
+from paho.mqtt import client as mqtt_client
+name='main'
+broker = 'test.mosquitto.org'
+port = 1883
+topic = "/sae/louis/light_recup"
+topic2 = "/sae/louis/temp"
+topic3 = "/sae/louis/light_recup2"
+topic4 = "/sae/louis/horaire"
+client_id = f'python-mqtt-{random.randint(0, 100)}'
+username = 'emqx'
+password = 'public'
+Liste=[]
+Liste2=[]
+Liste3=[]
+date=datetime.datetime.now()
+heure=date.hour
+minute=date.minute
+
+
+def connect_mqtt() -> mqtt_client:
+    def on_connect(client, userdata, flags, rc):
+        if rc == 0:
+            print("Connection au MQTT établie !")
+        else:
+            print("Erreur de connection !")
+
+    client = mqtt_client.Client(client_id)
+    client.username_pw_set(username, password)
+    client.on_connect = on_connect
+    client.connect(broker, port)
+    return client
+
+def subscribe(client: mqtt_client):
+    def on_message(client, userdata, msg):
+        if msg.topic =="/sae/louis/light_recup":
+            Liste.append(msg.payload.decode())
+        if msg.topic =="/sae/louis/light_recup2":
+            Liste2.append(msg.payload.decode())
+        if msg.topic =="/sae/louis/temp":
+            Liste3.append(msg.payload.decode())
+        if msg.topic == "/sae/louis/horaire":
+            x=msg.payload.decode.split(':','/')
+            if x[2]>heure and x[2]>x[0] and x[3]>x[1] :
+
+                msg = 1
+                client.publish("/sae/louis/light", msg)
+                client.publish("/sae/louis/light2", msg)
+                if heure>x[2] and minute>x[3]:
+                    msg2 =0
+                    client.publish("/sae/louis/light", msg2)
+                    client.publish("/sae/louis/light2", msg2)
+
+    client.subscribe(topic)
+    client.subscribe(topic2)
+    client.subscribe(topic3)
+    client.subscribe(topic4)
+    client.on_message = on_message
+
+def publish(client):
+    msg_count = 0
+    while True:
+        time.sleep(1)
+        msg = f"messages: {msg_count}"
+        client.publish(topic, msg)
+
+def run():
+    client = connect_mqtt()
+    subscribe(client)
+    client.loop_forever()
+
+if name == 'main':
+    run()
